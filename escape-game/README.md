@@ -1,5 +1,29 @@
-# Vue 3 + TypeScript + Vite
+# Projet Escape Game
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Ce projet est un jeu d'évasion en ligne, basé sur des énigmes et des puzzles. Le joueur doit résoudre une série de défis pour progresser dans le jeu et atteindre l'objectif final.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## Fonctionnalités
+
+- Système de gestion du temps
+- Système de gestion des énigmes
+- Système de gestion des objets
+- Système de gestion des indices
+- Système de gestion des récompenses
+
+## Technologies utilisées
+
+- Vue.js
+- GSAP
+- Vue Router
+- Vuex
+- Webpack
+
+## Installation
+
+1. Cloner le dépôt
+2. Installer les dépendances avec `npm install`
+3. Démarrer le serveur de développement avec `npm run serve`
+
+## Auteur
+
+Ce projet a été développé par Rémi DIEU.

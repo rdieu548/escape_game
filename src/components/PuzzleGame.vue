@@ -7,7 +7,7 @@
     <div v-else class="game-container">
       <!-- Header avec Timer et Score -->
       <div class="game-header">
-        <div class="timer">⏱️ {{ formatTime(timeRemaining) }}</div>
+        <div class="timer" :class="{ 'warning': formatTime(timeRemaining).isWarning }">⏱️ {{ formatTime(timeRemaining).time }}</div>
         <div class="score">🏆 {{ score }} points</div>
       </div>
 
@@ -32,17 +32,21 @@
       <!-- Inventaire -->
       <div class="inventory">
         <h3>🎒 Inventaire</h3>
-        <div class="inventory-items">
+        <TransitionGroup name="inventory-item" tag="div" class="inventory-items">
           <div 
             v-for="item in inventory" 
             :key="item.id"
             class="inventory-item"
-            :class="{ 'selected': selectedItem === item }"
+            :class="{ 
+              'selected': selectedItem === item,
+              'item-collected': item.isNew,
+              'item-used': item.isUsed
+            }"
             @click="selectItem(item)"
           >
             {{ item.icon }} {{ item.name }}
           </div>
-        </div>
+        </TransitionGroup>
       </div>
 
       <!-- Puzzle Modal -->
@@ -126,7 +130,7 @@
           <p class="victory-text">Vous avez désactivé la machine temporelle !</p>
           <div class="victory-stats">
             <p>Score final : {{ score }} points</p>
-            <p>Temps restant : {{ formatTime(timeRemaining) }}</p>
+            <p>Temps restant : {{ formatTime(timeRemaining).time }}</p>
           </div>
           <button @click="restartGame" class="btn-restart">
             🏠 Retour à l'accueil
@@ -193,6 +197,36 @@ const zoomedPlansUrl = ref("https://cdn.discordapp.com/attachments/1007388269375
 const messageType = ref('success');
 const showGameOver = ref(false);
 
+// Remplacer la déclaration des sons
+const sounds = {
+  click: new Audio('/sounds/click.wav'),
+  success: new Audio('/sounds/success.wav'),
+  error: new Audio('/sounds/error.wav'),
+  collect: new Audio('/sounds/collect.wav'),
+  warning: new Audio('/sounds/warning.wav'),
+  gameOver: new Audio('/sounds/game-over.wav')
+};
+
+// Précharger les sons
+onMounted(() => {
+  // Précharger tous les sons
+  Object.values(sounds).forEach(sound => {
+    sound.load();
+    // Réduire le volume
+    sound.volume = 0.3;
+  });
+
+  // Ajouter un événement de clic pour débloquer l'audio sur iOS/Safari
+  document.addEventListener('click', () => {
+    Object.values(sounds).forEach(sound => {
+      sound.play().then(() => {
+        sound.pause();
+        sound.currentTime = 0;
+      }).catch(() => {});
+    });
+  }, { once: true });
+});
+
 const zones = ref([
   {
     id: 'computer',
@@ -221,8 +255,9 @@ const zones = ref([
     hint: "Une armoire de laboratoire",
     type: 'code',
     puzzle: {
-      question: "Un post-it sur l'armoire indique : 'Code = Dernier relevé du compteur Geiger (22.07)'. Un compteur Geiger proche affiche '22.07'.",
+      question: "Compteur Geiger",
       solution: '2207',
+      image: 'https://cdn.discordapp.com/attachments/1007388269375410236/1336283010164719637/b3a50d0a-2d98-4eeb-96ca-5f1d17c710c2.jpeg?ex=67a33e08&is=67a1ec88&hm=6de9a1a9c1f46280a4ba612a5d924465979d93b3ef3e9c1f641db05074c190f5&',
       reward: {
         id: 'key',
         name: 'Clé Magnétique',
@@ -359,10 +394,32 @@ const handleSuccess = () => {
     solvedPuzzles.value.add(currentPuzzle.value.id);
   }
 
+  // Retirer l'objet utilisé de l'inventaire si c'est un puzzle de type 'item_use'
+  if (currentPuzzle.value.type === 'item_use' && selectedItem.value) {
+    const itemToUse = inventory.value.find(i => i.id === selectedItem.value.id);
+    if (itemToUse) {
+      itemToUse.isUsed = true;
+      setTimeout(() => {
+        inventory.value = inventory.value.filter(item => item.id !== selectedItem.value.id);
+        selectedItem.value = null;
+      }, 500);
+    }
+  }
+
   if (currentPuzzle.value.reward) {
-    inventory.value.push(currentPuzzle.value.reward);
-    showMessage(`Vous avez obtenu : ${currentPuzzle.value.reward.name}`);
+    const newItem = {
+      ...currentPuzzle.value.reward,
+      isNew: true
+    };
+    inventory.value.push(newItem);
+    showMessage(`Vous avez obtenu : ${newItem.name}`);
     
+    // Retirer le flag isNew après l'animation
+    setTimeout(() => {
+      const item = inventory.value.find(i => i.id === newItem.id);
+      if (item) item.isNew = false;
+    }, 800);
+
     // Afficher les plans quand on les obtient
     if (currentPuzzle.value.reward.id === 'plans') {
       showPlansImage();
@@ -424,7 +481,17 @@ onUnmounted(() => {
 const formatTime = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  const formattedTime = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  
+  // Jouer le son d'avertissement quand il reste 30 secondes
+  if (seconds === 30) {
+    sounds.warning.play();
+  }
+  
+  return {
+    time: formattedTime,
+    isWarning: seconds <= 30
+  };
 };
 
 const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
@@ -623,6 +690,57 @@ const handleGameOver = () => {
 .inventory-item:hover {
   background: rgba(66, 184, 131, 0.2);
   transform: translateY(-2px);
+}
+
+.inventory-item-enter-active,
+.inventory-item-leave-active {
+  transition: all 0.5s ease;
+}
+
+.inventory-item-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.inventory-item-leave-to {
+  opacity: 0;
+  transform: scale(0.5) translateY(-20px);
+}
+
+.item-collected {
+  animation: collectItem 0.8s ease-out;
+}
+
+.item-used {
+  animation: useItem 0.8s ease-out;
+}
+
+@keyframes collectItem {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(0);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes useItem {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.8) translateY(-10px);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(0) translateY(-20px);
+    opacity: 0;
+  }
 }
 
 .puzzle-modal {
@@ -974,5 +1092,16 @@ const handleGameOver = () => {
 @keyframes slideDown {
   from { transform: translate(-50%, -100%); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.timer.warning {
+  background: rgba(220, 53, 69, 0.8);
+  animation: pulse-warning 1s infinite;
+}
+
+@keyframes pulse-warning {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 </style> 
