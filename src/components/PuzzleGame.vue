@@ -197,48 +197,33 @@ const zoomedPlansUrl = ref("https://cdn.discordapp.com/attachments/1007388269375
 const messageType = ref('success');
 const showGameOver = ref(false);
 
-// Remplacer la déclaration des sons
-const sounds = {
-  click: new Audio('/sounds/click.wav'),
-  success: new Audio('/sounds/success.wav'),
-  error: new Audio('/sounds/error.wav'),
-  collect: new Audio('/sounds/collect.wav'),
-  warning: new Audio('/sounds/warning.wav'),
-  gameOver: new Audio('/sounds/game-over.wav')
-};
+// Remplacer la gestion des sons par une version plus simple
+const clickSound = ref(new Audio('/sounds/click.MP3'));
 
-// Précharger les sons
-onMounted(() => {
-  // Précharger tous les sons
-  Object.values(sounds).forEach(sound => {
-    sound.load();
-    // Réduire le volume
+// Fonction simple pour jouer le son
+const playClick = () => {
+  try {
+    // Créer une nouvelle instance à chaque fois
+    const sound = new Audio('/sounds/click.MP3');
     sound.volume = 0.3;
-  });
-
-  // Ajouter un événement de clic pour débloquer l'audio sur iOS/Safari
-  document.addEventListener('click', () => {
-    Object.values(sounds).forEach(sound => {
-      sound.play().then(() => {
-        sound.pause();
-        sound.currentTime = 0;
-      }).catch(() => {});
-    });
-  }, { once: true });
-});
+    sound.play();
+  } catch (error) {
+    console.error('Erreur son:', error);
+  }
+};
 
 const zones = ref([
   {
     id: 'computer',
     x: 25,
     y: 40,
-    hint: "L'ordinateur du Dr. Marcus",
+    hint: "L'ordinateur du Dr. Mathod",
     type: 'code',
     showHint: true,
     puzzle: {
       title: 'Terminal du Dr. Marcus',
       image: 'https://cdn.discordapp.com/attachments/1007388269375410236/1335976378746535996/image-4.jpg?ex=67a22075&is=67a0cef5&hm=7dd62942c9b26c1f898eef4101ad66aed33fb401d0df6724452be49eeea59da7&',
-      question: "Sur l'écran de l'ordinateur du Dr. Marcus, une note qui indique son premier prototype.",
+      question: "Sur l'écran de l'ordinateur du Dr. Mathod, une note qui indique son premier prototype.",
       solution: '1984',
       reward: {
         id: 'usb',
@@ -303,16 +288,17 @@ const zones = ref([
 ]);
 
 const selectItem = (item) => {
+  playClick();
   selectedItem.value = item;
   showMessage(`${item.name} sélectionné`);
   
-  // Si on clique sur les plans dans l'inventaire, les afficher
   if (item.id === 'plans') {
     showPlansImage();
   }
 };
 
 const handleZoneClick = (zone) => {
+  playClick();
   if (zone.puzzle) {
     // Vérifier si c'est la machine temporelle et si on a les plans
     if (zone.id === 'machine' && !inventory.value.some(item => item.id === 'plans')) {
@@ -483,14 +469,12 @@ const formatTime = (seconds: number) => {
   const remainingSeconds = seconds % 60;
   const formattedTime = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   
-  // Jouer le son d'avertissement quand il reste 30 secondes
-  if (seconds === 30) {
-    sounds.warning.play();
-  }
+  // Ajouter la logique pour le warning
+  const isWarning = seconds <= 30;  // Warning quand il reste 30 secondes ou moins
   
   return {
     time: formattedTime,
-    isWarning: seconds <= 30
+    isWarning: isWarning
   };
 };
 
@@ -599,9 +583,35 @@ const handleGameOver = () => {
 }
 
 .timer, .score {
-  background: rgba(0, 0, 0, 0.6);
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  background: rgba(40, 40, 40, 0.8);
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.timer.warning {
+  background: rgba(220, 53, 69, 0.9) !important;
+  color: white;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 20px rgba(220, 53, 69, 0.4);
+  animation: pulse-warning 1s infinite;
+}
+
+@keyframes pulse-warning {
+  0% { 
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(220, 53, 69, 0.4);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(220, 53, 69, 0.6);
+  }
+  100% { 
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(220, 53, 69, 0.4);
+  }
 }
 
 .lab-scene {
@@ -1092,16 +1102,5 @@ const handleGameOver = () => {
 @keyframes slideDown {
   from { transform: translate(-50%, -100%); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
-}
-
-.timer.warning {
-  background: rgba(220, 53, 69, 0.8);
-  animation: pulse-warning 1s infinite;
-}
-
-@keyframes pulse-warning {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
 }
 </style> 

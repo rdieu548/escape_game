@@ -62,7 +62,7 @@ const slides = ref([
   {
     image: 'https://cdn.discordapp.com/attachments/1007388269375410236/1335948045140889673/image-3.jpg?ex=67a20612&is=67a0b492&hm=665253da98c96556c742b6acf2438a076f087b05067242c6235b76872750aec2&',
     filter: 'brightness(0.7) saturate(1.2) sepia(0.2)',
-    text: "Le Dr. Marcus... Un brillant scientifique devenu fou.<br>Ses expériences sur le temps sont allées trop loin."
+    text: "Le Dr. Mathod... Un brillant scientifique devenu fou.<br>Ses expériences sur le temps sont allées trop loin."
   },
   {
     image: 'https://cdn.discordapp.com/attachments/1007388269375410236/1335951579173359669/image-3.jpg?ex=67a2095d&is=67a0b7dd&hm=cc57c6fd6a5892e4ed052b174e6ed7dd7ba5b2f098d2041878586c8b08d9ba2b&',
@@ -123,7 +123,7 @@ const interactiveZones = ref([
     hint: "Un ordinateur verrouillé...",
     puzzle: {
       type: 'code',
-      title: 'Ordinateur du Dr. Marcus',
+      title: 'Ordinateur du Dr. Mathod',
       description: 'L\'écran affiche : "Entrez le code d\'accès. Indice : Date importante ?"',
       solution: '1984',
       reward: { name: 'Fichiers secrets' }
